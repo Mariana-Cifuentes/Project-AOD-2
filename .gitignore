@@ -1,0 +1,47 @@
+# === Python / build caches ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.dll
+*.log
+*.sqlite
+*.db
+
+# Notebooks
+**/.ipynb_checkpoints/
+
+# IDE/editor
+.vscode/
+.idea/
+.DS_Store
+
+# === Airflow logs ===
+logs/
+
+# === Natural Earth (descarga automática) ===
+data/ne_50m_admin_0_countries.*
+data/ne_50m_admin_0_countries.zip
+
+# === Muestras CSV generadas por el ETL ===
+data/aod_sample_*.csv
+aod_sample_*.csv
+
+# === Staging de transform_streaming() ===
+data/staging/
+# (Incluye dim_wavelength.parquet, dim_date.parquet, dim_site.parquet y fact_parts/*.parquet)
+
+# === Reportes DQ (JSON/TXT) ===
+data/reports/
+
+# === Cache de Open-Meteo (si se usa) ===
+data/.cache_openmeteo/
+
+# === Plugins / caches locales ===
+plugins/.cache.sqlite
+
+# === Parquets y CSVs grandes dentro de data (opcional, si no quieres versionarlos) ===
+# Descomenta si prefieres ignorar todos los datos crudos y procesados
+# data/**/*.parquet
+# data/**/*.csv

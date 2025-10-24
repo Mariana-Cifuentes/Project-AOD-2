@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: airflow-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+
+  airflow:
+    image: apache/airflow:2.9.3-python3.12
+    container_name: airflow-etl
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # ---- Configuración Airflow ----
+      AIRFLOW_CORE_EXECUTOR: SequentialExecutor
+      AIRFLOW_CORE_SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW_CORE_LOAD_EXAMPLES: 'false'
+      AIRFLOW_CORE_DAGS_ARE_PAUSED_AT_CREATION: 'false'
+      AIRFLOW_WEBSERVER_WORKERS: 1
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+      _AIRFLOW_WWW_USER_EMAIL: admin@example.com
+      _AIRFLOW_WWW_USER_FIRSTNAME: Air
+      _AIRFLOW_WWW_USER_LASTNAME: Flow
+
+      # ---- Dependencias ETL y análisis científico ----
+      _PIP_ADDITIONAL_REQUIREMENTS: |
+        pandas numpy pyarrow polars openpyxl requests sqlalchemy pymysql
+        mysql-connector-python geopandas shapely pyproj rtree
+        matplotlib seaborn jupyter great_expectations
+        requests-cache retry-requests openmeteo-requests python-dotenv
+
+      # (Opcional) Límite de requests del paso Enrich
+      WEATHER_MAX_REQUESTS: "5000"
+
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+    command: bash -c "
+      airflow db upgrade &&
+      airflow users create -u airflow -p airflow -r Admin -e admin@example.com -f Air -l Flow &&
+      exec airflow standalone"
+
+volumes:
+  postgres-db-volume:

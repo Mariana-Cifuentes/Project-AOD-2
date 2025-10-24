@@ -1,0 +1,19 @@
+# Utilidades
+python-dotenv
+requests
+requests-cache
+retry-requests
+openmeteo-requests
+
+# Datos / ETL
+polars
+numpy
+pandas
+
+# MySQL
+mysql-connector-python
+
+# Geo 
+geopandas
+shapely
+rtree
