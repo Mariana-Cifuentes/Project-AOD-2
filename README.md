@@ -6,21 +6,23 @@
 ---
 
 ## Table of contents
-- [Repository structure](#repository-structure)
-- [Requirements](#requirements)
-- [Configuration (.env)](#configuration-env)
-- [How to run the project](#how-to-run-the-project)
-- [Expected dataset](#expected-dataset)
-- [Airflow DAG: design & parameters](#airflow-dag-design--parameters)
-- [ETL steps (Extract → Transform → Enrich → DQ → Load)](#etl-steps-extract--transform--enrich--dq--load)
-- [MySQL schema](#mysql-schema)
-- [Data Quality (DQ) & gate](#data-quality-dq--gate)
-- [Dashboard (Streamlit)](#dashboard-streamlit)
-- [Assumptions & constraints](#assumptions--constraints)
-- [Troubleshooting](#troubleshooting)
-- [Credits & sources](#credits--sources)
-- [License](#license)
 
+* [Repository structure](#repository-structure)
+* [Requirements](#requirements)
+* [Configuration (.env)](#configuration-env)
+* [How to run the project](#how-to-run-the-project)
+* [Project Objective](#project-objective)
+* [Project Context](#project-context)
+* [General Pipeline Flow](#general-pipeline-flow)
+* [Airflow DAG Overview](#airflow-dag-overview)
+* [ETL steps (Extract → Transform → Enrich → DQ → Load)](#etl-steps-extract--transform--enrich--dq--load)
+* [MySQL Star Schema](#mysql-star-schema)
+* [Data Quality (DQ) & gate](#data-quality-dq--gate)
+* [Dashboard (Streamlit)](#dashboard-streamlit)
+* [Assumptions & constraints](#assumptions--constraints)
+* [Troubleshooting](#troubleshooting)
+* [Credits & sources](#credits--sources)
+* [License](#license)
 ---
 
 ## Repository structure
