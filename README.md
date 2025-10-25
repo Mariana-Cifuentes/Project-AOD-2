@@ -1,4 +1,4 @@
-# 🛰️ AOD–AERONET ETL & Dashboard  
+# AOD–AERONET ETL & Dashboard  
 **Airflow + Polars + MySQL (+ Open‑Meteo, GeoPandas, Streamlit)**
 
 > Reproducible pipeline to transform and load daily **AERONET AOD** averages into a **MySQL Data Warehouse**, enrich them with historical weather (Open‑Meteo), validate **data quality (DQ)**, and explore results in a **Streamlit dashboard**.
@@ -52,6 +52,7 @@
 > The paths `./dags`, `./data`, `./plugins`, `./logs` are mounted under `/opt/airflow/...` inside the Airflow container.
 
 ---
+
 
 ## Requirements
 
@@ -109,26 +110,86 @@ WEATHER_MAX_REQUESTS=5000
 
 ---
 
-## Expected dataset
+##  **Project Objective**
 
-- CSV including (among others):
-  - `AERONET_Site`, `Date(dd:mm:yyyy)` or `Date`, `Day_of_Year`
-  - `AOD_340nm`, `AOD_380nm`, …, `AOD_1640nm`
-  - `440-870_Angstrom_Exponent`, `Precipitable_Water(cm)`
-  - `Site_Latitude(Degrees)`, `Site_Longitude(Degrees)`, `Site_Elevation(m)`
-- The sentinel **`-999`** is converted to **NULL** during extract.
+The main goal of this project is to build a complete **ETL pipeline** to process and analyze atmospheric aerosol data (AOD) from NASA’s **AERONET** network, enriched with meteorological variables from the **Open-Meteo Historical API**.
+
+The pipeline extracts, cleans, transforms, validates, and loads the data into a **MySQL Data Warehouse** using a star schema.
+This allows faster queries and visual analysis of how aerosols interact with climate conditions such as temperature, humidity, radiation, and wind.
 
 ---
 
-## Airflow DAG: design & parameters
+##  **Project Context**
 
-- **File**: `dags/etl.py`
-- **ID**: `etl_aeronet_aod_polars`
-- **Schedule**: `@daily` (`catchup=False`, `max_active_runs=1`, `concurrency=1`)
-- **Tasks** (dependencies):  
-  `extract` → `transform` → `weather_is_enriched` → `dq_quality` (gate) → `load`
-- **Staging artifacts** in `STAGING_DIR` (dimension Parquets and **fact split into part‑files**).
+Atmospheric aerosols are tiny particles suspended in the air.
+Although invisible, they have a major impact on **air quality, human health, and climate** — they can absorb or scatter sunlight, affect cloud formation, and even change rainfall patterns.
 
+NASA created **AERONET**, a global observation network that measures **Aerosol Optical Depth (AOD)**, which tells us how much sunlight is blocked by particles in the atmosphere.
+
+However, AOD alone does not explain *why* the aerosol concentration changes.
+To understand the causes, we integrated AERONET data with **meteorological variables** from the Open-Meteo API, such as temperature, humidity, radiation, wind speed, and evapotranspiration.
+This combination allows us to study not only *how many* aerosols are present, but also *why* their levels increase or decrease under different weather conditions.
+
+---
+
+##  **General Pipeline Flow**
+
+The following flow summarizes the full **AOD ETL pipeline**:
+
+<img width="1056" height="451" alt="image" src="https://github.com/user-attachments/assets/234ba5c0-e924-4b0e-a654-855aa13c7c21" />
+
+The workflow shown in the diagram automates every step — from data collection to visualization — ensuring clean, validated, and enriched data ready for analysis.
+
+1. **Data Extraction**
+
+   * Source: **AERONET CSV dataset (NASA)** and **Open-Meteo API** for historical weather data.
+   * We use **Polars** (a fast DataFrame engine) to efficiently load and clean millions of records, replacing invalid values like `-999` with `NULL`.
+
+2. **Transformation**
+
+   * The dataset is normalized, cleaned, and converted from *wide* to *long* format.
+   * New analytical columns are created such as `Spectral_Band`, `Sensitive_Aerosol`, and `Particle_Type`.
+   * Results are saved in **Parquet** format — optimized for columnar storage and fast processing.
+
+3. **Enrichment & Merge**
+
+   * Using **Open-Meteo API**, we enrich each AOD record with daily climate variables (temperature, humidity, radiation, wind, etc.).
+   * The merge key `(Date, Latitude, Longitude)` ensures accurate matching between AERONET and weather data.
+
+4. **Data Quality Validation**
+
+   * A full **Data Quality (DQ)** stage checks **Completeness, Consistency, Uniqueness, and Validity**.
+   * If the overall quality KPI is below **90%**, the pipeline automatically stops — preventing bad data from being loaded.
+
+5. **Load to Data Warehouse**
+
+   * The validated data is loaded into a **MySQL Data Warehouse**, structured in a **Star Schema** (Fact + Dimensions).
+   * This design supports efficient analytical queries and dashboards.
+
+6. **Visualization & Analysis**
+
+   * Exploratory Data Analysis (**EDA**) is performed in **Jupyter Notebooks**.
+   * A **Streamlit dashboard** provides an interactive interface to explore AOD and climate insights.
+   * The entire workflow, including code, configuration, and artifacts, is **version-controlled on GitHub** for transparency and reproducibility.
+
+---
+
+##  **Airflow DAG Overview**
+
+The entire ETL process is orchestrated in **Apache Airflow** through a DAG named `etl_aeronet_aod_polars`.
+This DAG automatically controls dependencies and execution order across the pipeline.
+
+<img width="1690" height="191" alt="image" src="https://github.com/user-attachments/assets/732b6b9f-1e28-473c-9b67-417f74ef0236" />
+
+**Tasks Overview:**
+
+1. **extract** → Reads and cleans the original AERONET CSV file.
+2. **transform** → Applies transformations with Polars, creates dimensions and fact tables, and writes outputs in Parquet format.
+3. **weather_is_enriched** → Calls the Open-Meteo API and stores daily climate data as a Parquet file.
+4. **dq_quality** → Performs full data quality validation (completeness, consistency, uniqueness, and validity).
+
+   * If the global KPI is **below 90%**, the DAG stops automatically.
+5. **load** → Loads validated data into the MySQL Data Warehouse.
 ---
 
 ## ETL steps (Extract → Transform → Enrich → DQ → Load)
@@ -163,7 +224,10 @@ WEATHER_MAX_REQUESTS=5000
 
 ---
 
-## MySQL schema
+## MySQL Star Schema
+
+<img width="623" height="750" alt="image" src="https://github.com/user-attachments/assets/e4f8aa5b-cb3e-4aab-aa9a-ba9dfcf4ac02" />
+
 
 - **dim_wavelength**: `id_wavelength (PK)`, `Wavelength_nm`, `Spectral_Band`, `Sensitive_Aerosol`
 - **dim_date**: `id_date (PK)`, `Date`, `Year`, `Month`, `Day`, `Day_of_Year`
